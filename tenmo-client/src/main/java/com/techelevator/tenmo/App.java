@@ -4,15 +4,17 @@ import com.techelevator.tenmo.model.AuthenticatedUser;
 import com.techelevator.tenmo.model.UserCredentials;
 import com.techelevator.tenmo.services.AuthenticationService;
 import com.techelevator.tenmo.services.ConsoleService;
+import com.techelevator.tenmo.services.TEnmoService;
 
 public class App {
 
-    private static final String API_BASE_URL = "http://localhost:8080/";
+    protected static final String API_BASE_URL = "http://localhost:8080/";
 
     private final ConsoleService consoleService = new ConsoleService();
     private final AuthenticationService authenticationService = new AuthenticationService(API_BASE_URL);
 
-    private AuthenticatedUser currentUser;
+    protected AuthenticatedUser currentUser;
+    private TEnmoService tEnmoService;
 
     public static void main(String[] args) {
         App app = new App();
@@ -66,15 +68,15 @@ public class App {
             consoleService.printMainMenu();
             menuSelection = consoleService.promptForMenuSelection("Please choose an option: ");
             if (menuSelection == 1) {
-                viewCurrentBalance();
+                tEnmoService.viewCurrentBalance();
             } else if (menuSelection == 2) {
-                viewTransferHistory();
+                tEnmoService.viewTransferHistory();
             } else if (menuSelection == 3) {
-                viewPendingRequests();
+                tEnmoService.viewPendingRequests();
             } else if (menuSelection == 4) {
-                sendBucks();
+                tEnmoService.sendBucks();
             } else if (menuSelection == 5) {
-                requestBucks();
+                tEnmoService.requestBucks();
             } else if (menuSelection == 0) {
                 continue;
             } else {
@@ -84,29 +86,6 @@ public class App {
         }
     }
 
-	private void viewCurrentBalance() {
-		// TODO Auto-generated method stub
-		
-	}
 
-	private void viewTransferHistory() {
-		// TODO Auto-generated method stub
-		
-	}
-
-	private void viewPendingRequests() {
-		// TODO Auto-generated method stub
-		
-	}
-
-	private void sendBucks() {
-		// TODO Auto-generated method stub
-		
-	}
-
-	private void requestBucks() {
-		// TODO Auto-generated method stub
-		
-	}
 
 }
