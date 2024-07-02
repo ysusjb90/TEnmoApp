@@ -1,12 +1,14 @@
 package com.techelevator.tenmo.model;
 
+import java.math.BigDecimal;
+
 public class Transfer {
     private int transferID;
     private int transferTypeID;
     private int transferStatusID;
     private int accountFromID;
     private int accountToID;
-    private int amountToTransfer;
+    private BigDecimal amountToTransfer;
 
     public int getTransferID() {
         return transferID;
@@ -48,17 +50,17 @@ public class Transfer {
         this.accountToID = accountToID;
     }
 
-    public int getAmountToTransfer() {
+    public BigDecimal getAmountToTransfer() {
         return amountToTransfer;
     }
 
-    public void setAmountToTransfer(int amountToTransfer) {
+    public void setAmountToTransfer(BigDecimal amountToTransfer) {
         this.amountToTransfer = amountToTransfer;
     }
     public Transfer(){
         }
 
-    public Transfer(int transferID, int transferTypeID, int transferStatusID, int accountFromID, int accountToID, int amountToTransfer) {
+    public Transfer(int transferID, int transferTypeID, int transferStatusID, int accountFromID, int accountToID, BigDecimal amountToTransfer) {
         this.transferID = transferID;
         this.transferTypeID = transferTypeID;
         this.transferStatusID = transferStatusID;

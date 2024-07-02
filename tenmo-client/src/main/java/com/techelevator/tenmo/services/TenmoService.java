@@ -2,16 +2,16 @@ package com.techelevator.tenmo.services;
 
 import com.techelevator.tenmo.App;
 import com.techelevator.tenmo.model.Account;
+import com.techelevator.tenmo.model.User;
 import org.springframework.http.*;
 import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
-import java.util.Map;
 
-public class TEnmoService extends App {
+public class TenmoService extends App {
     private RestTemplate restTemplate;
 
-    public TEnmoService() {
+    public TenmoService() {
 
         super();
         this.restTemplate=new RestTemplate();
