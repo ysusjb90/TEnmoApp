@@ -8,7 +8,6 @@ import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class TenmoService {
@@ -77,4 +76,14 @@ public class TenmoService {
 
     }
 
+    public Transfer getTransferByID(int transferID) {
+        HttpHeaders header = createAuthHeader();
+        String url = API_BASE_URL + "accounts/history";
+        Transfer transfer = null;
+        HttpEntity<Integer> entity = new HttpEntity<>(transferID,header);
+        ResponseEntity<Transfer> responseEntity = restTemplate.exchange(url, HttpMethod.GET, entity, Transfer.class);
+
+        return transfer;
+
+    }
 }

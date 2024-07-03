@@ -74,10 +74,19 @@ public class App {
                 tenmoService.viewCurrentBalance();
             } else if (menuSelection == 2) {
                 tenmoService.viewTransferHistory();
+
+                consoleService.printTransferDetails(tenmoService.getTransferByID(
+                        consoleService.promptForInt(
+                        "Please enter transfer ID to view details (0 to cancel): ")));
+
             } else if (menuSelection == 3) {
                 tenmoService.viewPendingRequests();
             } else if (menuSelection == 4) {
-                tenmoService.sendBucks(1001, new BigDecimal("1.00"));
+                int userToID= consoleService.promptForInt(
+                        "Enter ID of user you are sending to (0 to cancel): ");
+                BigDecimal amountToSend=consoleService.promptForBigDecimal("Enter amount: ");
+                tenmoService.sendBucks(userToID,amountToSend);
+
             } else if (menuSelection == 5) {
                 tenmoService.requestBucks();
             } else if (menuSelection == 0) {

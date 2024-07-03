@@ -62,7 +62,14 @@ public class TenmoController {
     }
 
     @RequestMapping(path = "accounts/history", method = RequestMethod.GET)
-    public Transfer[] accountHistory(Principal user){
+    public Transfer[] accountHistory(@RequestBody Integer transferID, Principal user){
+        if (transferID !=null) {
+            Transfer transfer = null;
+            transfer = transferDAO.getTransferByID(transferID.intValue());
+            Transfer[] transferByID = new Transfer[0];
+            transferByID [0] = transfer;
+            return transferByID;
+        }
         int userId = userDao.getUserByUsername(user.getName()).getId();
         List<Transfer> accountHistory = transferDAO.getTransfersByUserID(userId);
         return accountHistory.toArray(Transfer[]::new);
@@ -70,7 +77,7 @@ public class TenmoController {
     @RequestMapping(path = "accounts/history?id={transferId}", method = RequestMethod.GET)
     public Transfer getTransfer(@PathVariable int transferId){
         Transfer transfer = null;
-        transferDAO.getTransferByID(transferId);
+        transfer = transferDAO.getTransferByID(transferId);
         return transfer;
     }
 
