@@ -6,6 +6,8 @@ import com.techelevator.tenmo.services.AuthenticationService;
 import com.techelevator.tenmo.services.ConsoleService;
 import com.techelevator.tenmo.services.TenmoService;
 
+import java.math.BigDecimal;
+
 public class App {
 
     private static final String API_BASE_URL = "http://localhost:8080/";
@@ -75,7 +77,7 @@ public class App {
             } else if (menuSelection == 3) {
                 tenmoService.viewPendingRequests();
             } else if (menuSelection == 4) {
-                tenmoService.sendBucks();
+                tenmoService.sendBucks(1001, new BigDecimal("1.00"));
             } else if (menuSelection == 5) {
                 tenmoService.requestBucks();
             } else if (menuSelection == 0) {

@@ -46,7 +46,6 @@ public class JdbcAccountDao implements AccountDAO {
         return account;
     }
 
-
     @Override
     public Account getAccountByID(int accountID) {
         Account account = null;
@@ -68,9 +67,10 @@ public class JdbcAccountDao implements AccountDAO {
     public Account updateBalance(Account userAccount, BigDecimal amount) {
         String sql = "UPDATE account SET balance = ? WHERE account_id = ?";
         Account account = null;
+        BigDecimal newBalance = userAccount.getBalance().add(amount);
         int accountID = userAccount.getAccountID();
         try {
-            int numRowsupdated = jdbcTemplate.update(sql, amount, accountID);
+            int numRowsupdated = jdbcTemplate.update(sql, newBalance, accountID);
             if (numRowsupdated == 0){
                 throw new DaoException("No rows updated");
             }

@@ -1,14 +1,24 @@
 package com.techelevator.tenmo.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.math.BigDecimal;
 
 public class Transfer {
+    @JsonProperty("transfer_id")
     private int transferID;
+    @JsonProperty("transfer_type_id")
     private int transferTypeID;
+    @JsonProperty("transfer_status_id")
     private int transferStatusID;
+    @JsonProperty("account_from")
     private int accountFromID;
+    @JsonProperty("account_to")
     private int accountToID;
-    private BigDecimal amountToTransfer;
+    @JsonProperty("amount")
+    private BigDecimal amount;
+
+
 
     public int getTransferID() {
         return transferID;
@@ -50,13 +60,15 @@ public class Transfer {
         this.accountToID = accountToID;
     }
 
-    public BigDecimal getAmountToTransfer() {
-        return amountToTransfer;
+    public BigDecimal getAmount() {
+        return amount;
     }
 
-    public void setAmountToTransfer(BigDecimal amountToTransfer) {
-        this.amountToTransfer = amountToTransfer;
+    public void setAmount(BigDecimal amount) {
+        this.amount = amount;
     }
+
+
     public Transfer(){
         }
 
@@ -66,7 +78,17 @@ public class Transfer {
         this.transferStatusID = transferStatusID;
         this.accountFromID = accountFromID;
         this.accountToID = accountToID;
-        this.amountToTransfer = amountToTransfer;
+        this.amount = amountToTransfer;
+    }
+
+    @Override
+    public String toString(){
+        String string = "%d\t %s\t%s\t$%f";
+        String recipient = "test recipient";
+        String toOrFrom = "test direction";
+        return String.format(string,
+                this.transferID, toOrFrom , recipient, this.amount);
+
     }
 
 }

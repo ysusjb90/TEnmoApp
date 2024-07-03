@@ -1,22 +1,25 @@
 package com.techelevator.tenmo.dao;
 
 import com.techelevator.tenmo.exception.DaoException;
-import com.techelevator.tenmo.model.Account;
 import com.techelevator.tenmo.model.Transfer;
-import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.CannotGetJdbcConnectionException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.rowset.SqlRowSet;
 import org.springframework.stereotype.Component;
 
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
 @Component
 public class JdbcTransferDao implements TransferDAO {
    JdbcTemplate jdbcTemplate;
+   private final String baseSql = "SELECT * FROM transfer t\n" +
+           "JOIN account a ON t.account_from = a.account_id\n" +
+           "JOIN account b ON t.account_to = b.account_id\n" +
+           "JOIN transfer_status ts ON t.transfer_status_id = ts.transfer_status_id\n" +
+           "JOIN transfer_type tt ON t.transfer_type_id = tt.transfer_type_id\n" +
+           "\n";
 
     public JdbcTransferDao(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
@@ -31,7 +34,7 @@ public class JdbcTransferDao implements TransferDAO {
                 " WHERE transfer_id = ?";
         try {
             int numRowsUpdated = jdbcTemplate.update(sql,transfer.getTransferTypeID(), transfer.getTransferStatusID(),
-                    transfer.getAccountFromID(), transfer.getAccountToID(), transfer.getAmountToTransfer());
+                    transfer.getAccountFromID(), transfer.getAccountToID(), transfer.getAmount());
             if (numRowsUpdated == 0){
                 throw new DaoException("No Rows Were Updated, Invalid Transfer");
             }
@@ -63,11 +66,17 @@ public class JdbcTransferDao implements TransferDAO {
     }
 
     @Override
-    public List<Transfer> getAllTransfers() {
+    public List<Transfer> getTransfersByUserID(int userID) {
         List<Transfer> allTransfers = new ArrayList<>();
-        String sql = "SELECT transfer_id, transfer_type_id, transfer_status_id, account_from, account_to, amount ";
+        String sql = "SELECT t.transfer_id, t.transfer_type_id, t.transfer_status_id, t.account_from, t.account_to, t.amount " +
+                "FROM transfer t " +
+                "JOIN account a ON t.account_from = a.account_id " +
+                "JOIN account b ON t.account_to = b.account_id " +
+                "JOIN transfer_status ts ON t.transfer_status_id = ts.transfer_status_id " +
+                "JOIN transfer_type tt ON t.transfer_type_id = tt.transfer_type_id " +
+                "WHERE a.user_id = ? OR b.user_id = ?; ";
         try {
-            SqlRowSet results = jdbcTemplate.queryForRowSet(sql);
+            SqlRowSet results = jdbcTemplate.queryForRowSet(sql, userID, userID);
             while (results.next()){
                 allTransfers.add(mapRowToTransfer(results));
             }
@@ -109,7 +118,7 @@ public class JdbcTransferDao implements TransferDAO {
         try{
             int newTransferID = jdbcTemplate.queryForObject(sql, int.class,
                     newTransfer.getTransferTypeID(),newTransfer.getTransferStatusID(),newTransfer.getAccountFromID(),
-                    newTransfer.getAccountToID(),newTransfer.getAmountToTransfer());
+                    newTransfer.getAccountToID(),newTransfer.getAmount());
             createdTransfer = getTransferByID(newTransferID);
 
         }catch (CannotGetJdbcConnectionException e) {
@@ -128,7 +137,8 @@ public class JdbcTransferDao implements TransferDAO {
         transfer.setTransferStatusID(result.getInt("transfer_status_id"));
         transfer.setAccountFromID(result.getInt("account_from"));
         transfer.setAccountToID(result.getInt("account_to"));
-        transfer.setAmountToTransfer(result.getBigDecimal("amount"));
+        transfer.setAmount(result.getBigDecimal("amount"));
         return transfer;
     }
+
 }

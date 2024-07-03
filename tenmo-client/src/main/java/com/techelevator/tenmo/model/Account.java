@@ -1,9 +1,13 @@
 package com.techelevator.tenmo.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.math.BigDecimal;
 
 public class Account{
+    @JsonProperty("account_id")
     private int accountID;
+    @JsonProperty("user_id")
     private int userID;
     private BigDecimal balance;
 
