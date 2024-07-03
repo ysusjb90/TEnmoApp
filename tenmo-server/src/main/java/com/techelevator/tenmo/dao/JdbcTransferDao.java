@@ -74,7 +74,8 @@ public class JdbcTransferDao implements TransferDAO {
                 "JOIN account b ON t.account_to = b.account_id " +
                 "JOIN transfer_status ts ON t.transfer_status_id = ts.transfer_status_id " +
                 "JOIN transfer_type tt ON t.transfer_type_id = tt.transfer_type_id " +
-                "WHERE a.user_id = ? OR b.user_id = ?; ";
+                "WHERE a.user_id = ? OR b.user_id = ? " +
+                "ORDER BY t.transfer_id; ";
         try {
             SqlRowSet results = jdbcTemplate.queryForRowSet(sql, userID, userID);
             while (results.next()){
@@ -99,7 +100,6 @@ public class JdbcTransferDao implements TransferDAO {
     }
         return description;
     }
-
     @Override
     public String getTransferStatusDescription(int transferStatusID) {
         String description = null;

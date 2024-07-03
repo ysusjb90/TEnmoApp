@@ -1,6 +1,7 @@
 package com.techelevator.tenmo;
 
 import com.techelevator.tenmo.model.AuthenticatedUser;
+import com.techelevator.tenmo.model.Transfer;
 import com.techelevator.tenmo.model.UserCredentials;
 import com.techelevator.tenmo.services.AuthenticationService;
 import com.techelevator.tenmo.services.ConsoleService;
@@ -73,14 +74,42 @@ public class App {
             if (menuSelection == 1) {
                 tenmoService.viewCurrentBalance();
             } else if (menuSelection == 2) {
-                tenmoService.viewTransferHistory();
-
+                Transfer[] allTransfers = tenmoService.getAllTransfers();
+                String direction = "";
+                for (Transfer t: allTransfers){
+                    if (t.getAccountToID() == tenmoService.getAccount().getAccountID()){
+                        direction = "From: ";
+                    } else {
+                        direction = "To: ";
+                    }
+                    consoleService.printTransferShort(t.getTransferID(),direction, "Test User", t.getAmount());
+                }
                 consoleService.printTransferDetails(tenmoService.getTransferByID(
                         consoleService.promptForInt(
                         "Please enter transfer ID to view details (0 to cancel): ")));
 
             } else if (menuSelection == 3) {
-                tenmoService.viewPendingRequests();
+                System.out.println("-------------------------------------------\n" +
+                        "Pending Transfers\n" +
+                        "-------------------------------------------");
+                Transfer[] pendingTransfers = tenmoService.getPendingTransfers();
+                for (Transfer t : pendingTransfers){
+                    System.out.println(t);
+                };
+                int selection = consoleService.promptForInt("Please enter transfer ID to approve/reject (0 to cancel)");
+                Transfer transfer = tenmoService.getTransferByID(selection);
+                System.out.println("1: Approve\n2: Reject\n0: Don't approve or reject\n------");
+                selection = consoleService.promptForMenuSelection("Please choose an option: ");
+                switch (selection){
+                    case 1:
+                        transfer.setTransferStatusID(2);
+                        break;
+                    case 2:
+                        transfer.setTransferStatusID(3);
+                    default:
+                        break;
+                }
+                
             } else if (menuSelection == 4) {
                 int userToID= consoleService.promptForInt(
                         "Enter ID of user you are sending to (0 to cancel): ");
@@ -88,7 +117,11 @@ public class App {
                 tenmoService.sendBucks(userToID,amountToSend);
 
             } else if (menuSelection == 5) {
-                tenmoService.requestBucks();
+                consoleService.printAllUsers(tenmoService.getAllUsers());
+                int userFromId = consoleService.promptForInt("Enter ID of user you are requesting from: ");
+                BigDecimal amount = consoleService.promptForBigDecimal("Enter amount: ");
+                tenmoService.requestBucks(userFromId, amount);
+                
             } else if (menuSelection == 0) {
                 continue;
             } else {
