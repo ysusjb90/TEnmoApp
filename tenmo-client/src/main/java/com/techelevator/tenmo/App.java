@@ -8,13 +8,13 @@ import com.techelevator.tenmo.services.TenmoService;
 
 public class App {
 
-    protected static final String API_BASE_URL = "http://localhost:8080/";
+    private static final String API_BASE_URL = "http://localhost:8080/";
 
     private final ConsoleService consoleService = new ConsoleService();
     private final AuthenticationService authenticationService = new AuthenticationService(API_BASE_URL);
 
-    protected AuthenticatedUser currentUser;
-    private TenmoService tEnmoService;
+    private AuthenticatedUser currentUser;
+    private TenmoService tenmoService;
 
     public static void main(String[] args) {
         App app = new App();
@@ -63,20 +63,21 @@ public class App {
     }
 
     private void mainMenu() {
+        tenmoService = new TenmoService(currentUser);
         int menuSelection = -1;
         while (menuSelection != 0) {
             consoleService.printMainMenu();
             menuSelection = consoleService.promptForMenuSelection("Please choose an option: ");
             if (menuSelection == 1) {
-                tEnmoService.viewCurrentBalance();
+                tenmoService.viewCurrentBalance();
             } else if (menuSelection == 2) {
-                tEnmoService.viewTransferHistory();
+                tenmoService.viewTransferHistory();
             } else if (menuSelection == 3) {
-                tEnmoService.viewPendingRequests();
+                tenmoService.viewPendingRequests();
             } else if (menuSelection == 4) {
-                tEnmoService.sendBucks();
+                tenmoService.sendBucks();
             } else if (menuSelection == 5) {
-                tEnmoService.requestBucks();
+                tenmoService.requestBucks();
             } else if (menuSelection == 0) {
                 continue;
             } else {

@@ -14,4 +14,5 @@ public interface TransferDAO {
     List<Transfer> getAllTransfers();
     String getTransferTypeDescription(int transferTypeID);
     String getTransferStatusDescription(int transferStatusID);
+    Transfer createTransfer (Transfer newTransfer);
 }

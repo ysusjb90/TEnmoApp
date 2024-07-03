@@ -1,34 +1,34 @@
 package com.techelevator.tenmo.services;
 
-import com.techelevator.tenmo.App;
 import com.techelevator.tenmo.model.Account;
-import com.techelevator.tenmo.model.User;
+import com.techelevator.tenmo.model.AuthenticatedUser;
 import org.springframework.http.*;
 import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
 
-public class TenmoService extends App {
+public class TenmoService {
+    private static final String API_BASE_URL = "http://localhost:8080/";
     private RestTemplate restTemplate;
+    private AuthenticatedUser user;
 
-    public TenmoService() {
-
-        super();
+    public TenmoService(AuthenticatedUser authenticatedUser) {
+        this.user = authenticatedUser;
         this.restTemplate=new RestTemplate();
     }
 
-    public HttpEntity createHttpEntity(){
+    public HttpEntity createHttpEntity(AuthenticatedUser user){
         HttpHeaders header = new HttpHeaders();
-        String token = super.currentUser.getToken();
+        String token = user.getToken();
         header.setBearerAuth(token);
         header.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<Void> httpEntity= new HttpEntity<>(header);
+        HttpEntity<AuthenticatedUser> httpEntity= new HttpEntity<>(user,header);
         return httpEntity;
     }
     public void viewCurrentBalance() {
-        String url = API_BASE_URL + "/accounts";
+        String url = API_BASE_URL + "accounts";
         // TODO Auto-generated method stub
-        HttpEntity accountEntity = createHttpEntity();
+        HttpEntity accountEntity = createHttpEntity(user);
         ResponseEntity<Account> responseEntity =restTemplate.exchange(url, HttpMethod.GET, accountEntity, Account.class);
         Account currentAccount = responseEntity.getBody();
         BigDecimal currentBalance = currentAccount.getBalance();

@@ -25,21 +25,25 @@ public class JdbcAccountDao implements AccountDAO {
     }
 
     @Override
-    public List<Account> getAccountsByUserID(int userID) {
+    public Account getAccountByUserID(int userID) {
         List<Account> accounts = new ArrayList<>();
+        Account account = null;
         String sql = "SELECT account_id, user_id, balance FROM account WHERE user_id = ?";
         try {
             SqlRowSet results = jdbcTemplate.queryForRowSet(sql,userID);
-            while(results.next()){
-                Account thisAccount = mapRowToAccount(results);
-                accounts.add(thisAccount);
+            if (results.next()){
+                account = mapRowToAccount(results);
             }
+            //while(results.next()){
+            //    Account thisAccount = mapRowToAccount(results);
+            //    accounts.add(thisAccount);
+            //}
         } catch (CannotGetJdbcConnectionException e) {
             throw new DaoException("Its a phantom.", e);
         }catch (DataIntegrityViolationException e) {
             throw new DaoException("Bad Syntax or somethin.", e);
         }
-        return accounts;
+        return account;
     }
 
 

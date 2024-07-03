@@ -102,6 +102,24 @@ public class JdbcTransferDao implements TransferDAO {
         }
         return description;
     }
+    public Transfer createTransfer(Transfer newTransfer){
+        Transfer createdTransfer = null;
+        String sql = "INSERT INTO transfer(transfer_type_id, transfer_status_id, account_from, account_to, amount)\n" +
+                "\tVALUES (?, ?, ?, ?, ?) RETURNING transfer_id;";
+        try{
+            int newTransferID = jdbcTemplate.queryForObject(sql, int.class,
+                    newTransfer.getTransferTypeID(),newTransfer.getTransferStatusID(),newTransfer.getAccountFromID(),
+                    newTransfer.getAccountToID(),newTransfer.getAmountToTransfer());
+            createdTransfer = getTransferByID(newTransferID);
+
+        }catch (CannotGetJdbcConnectionException e) {
+            throw new DaoException("Its a phantom.", e);
+        } catch (DataIntegrityViolationException e) {
+            throw new DaoException("Bad Syntax or somethin.", e);
+        }
+        return createdTransfer;
+
+    }
 
     public Transfer mapRowToTransfer(SqlRowSet result){
         Transfer transfer = new Transfer();
