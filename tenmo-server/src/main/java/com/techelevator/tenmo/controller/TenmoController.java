@@ -3,12 +3,14 @@ package com.techelevator.tenmo.controller;
 import com.techelevator.tenmo.dao.AccountDAO;
 import com.techelevator.tenmo.dao.TransferDAO;
 import com.techelevator.tenmo.dao.UserDao;
+import com.techelevator.tenmo.exception.DaoException;
 import com.techelevator.tenmo.model.Account;
 import com.techelevator.tenmo.model.Transfer;
 import com.techelevator.tenmo.model.User;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
@@ -40,19 +42,23 @@ public class TenmoController {
     Account accountFrom = accountDAO.getAccountByUserID(
             userDao.getUserByUsername(user.getName()).getId());
     Account accountTo = accountDAO.getAccountByUserID(userToID);
-    if (amountToSend.compareTo(BigDecimal.ZERO) == 1 &&
-            accountFrom.getBalance().compareTo(amountToSend) == 1
-            && accountFrom.getUserID() != accountTo.getUserID()
-    ) {
-        transfer = new Transfer();
-        transfer.setAccountFromID(accountFrom.getAccountID());
-        transfer.setAccountToID(accountTo.getAccountID());
-        transfer.setAmount(amountToSend);
-        transfer.setTransferStatusID(2);
-        transfer.setTransferTypeID(2);
-    }
-    accountDAO.updateBalance(accountFrom, amountToSend.negate());
-    accountDAO.updateBalance(accountTo, amountToSend);
+        try {
+            if (amountToSend.compareTo(BigDecimal.ZERO) == 1 &&
+                    accountFrom.getBalance().compareTo(amountToSend) == 1
+                    && accountFrom.getUserID() != accountTo.getUserID()
+            ) {
+                transfer = new Transfer();
+                transfer.setAccountFromID(accountFrom.getAccountID());
+                transfer.setAccountToID(accountTo.getAccountID());
+                transfer.setAmount(amountToSend);
+                transfer.setTransferStatusID(2);
+                transfer.setTransferTypeID(2);
+            }
+            accountDAO.updateBalance(accountFrom, amountToSend.negate());
+            accountDAO.updateBalance(accountTo, amountToSend);
+        } catch (NullPointerException np) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No results found.");
+        }
     return transferDAO.createTransfer(transfer);
 }
     @RequestMapping(path = "request", method = RequestMethod.POST)

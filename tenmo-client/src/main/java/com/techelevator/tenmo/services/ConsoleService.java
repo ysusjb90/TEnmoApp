@@ -111,5 +111,7 @@ public class ConsoleService {
         String string = "%d\t %s\t%s\t$%f";
         System.out.println(String.format(string, transferID, direction,otherUser, amount));
     }
-    
+    public void invalidSelection (String message){
+        System.out.println(message + " Returning to Main Menu.");
+    }
 }
