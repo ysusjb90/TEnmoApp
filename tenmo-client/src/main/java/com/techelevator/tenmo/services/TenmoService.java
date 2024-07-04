@@ -5,15 +5,13 @@ import com.techelevator.tenmo.model.AuthenticatedUser;
 import com.techelevator.tenmo.model.Transfer;
 import com.techelevator.tenmo.model.User;
 import org.springframework.http.*;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
-import java.security.Principal;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class TenmoService {
@@ -63,25 +61,28 @@ public class TenmoService {
         HttpEntity<Void> entity = new HttpEntity<>(header);
         Transfer[] allTransfers =
                 restTemplate.exchange(url, HttpMethod.GET, entity, Transfer[].class).getBody();
-        String direction = "";
-        for (Transfer t: allTransfers){
-            consoleService.printTransferShort(t, user.getUser());
-        }
-        try {
-            int selection = consoleService.promptForInt(
-                    "Please enter transfer ID to view details (0 to cancel): ");
-            if (selection == 0){
-                consoleService.invalidSelection("Cancelling.");
-            }else {
-                consoleService.printTransferDetails(getTransferByID(selection));
-                consoleService.pause();
+        consoleService.printTransferOverviewBanner();
+        if (allTransfers.length == 0){
+            System.out.println("--------------------\nNo Transfers\n--------------------");
+        } else {
+            for (Transfer t : allTransfers) {
+                consoleService.printTransferOverview(t, user.getUser());
             }
-        } catch (NullPointerException np) {
-            consoleService.invalidSelection("Invalid Selection.");
+            try {
+                int selection = consoleService.promptForInt(
+                        "Please enter transfer ID to view details (0 to cancel): ");
+                if (selection == 0) {
+                    consoleService.invalidSelection("Cancelling.");
+                } else {
+                    consoleService.printTransferDetails(getTransferByID(selection));
+                    consoleService.pause();
+                }
+            } catch (NullPointerException np) {
+                consoleService.invalidSelection("Invalid Selection.");
+            }
         }
         return allTransfers;
     }
-
     public Transfer getTransferByID(int transferID) {
         HttpHeaders header = createAuthHeader();
         String url = API_BASE_URL + "account/transfers?id="+transferID;
@@ -96,7 +97,7 @@ public class TenmoService {
         HttpEntity entity = new HttpEntity(header);
         Transfer[] pendingTransfers = restTemplate.exchange(url, HttpMethod.GET, entity, Transfer[].class).getBody();
         for (Transfer t : pendingTransfers){
-            consoleService.printTransferShort(t, user.getUser());
+            consoleService.printTransferOverview(t, user.getUser());
         };
         System.out.println();
         if (pendingTransfers.length == 0){
@@ -157,7 +158,7 @@ public class TenmoService {
             if (sentTransfer != null){
                 consoleService.printTransferDetails(sentTransfer);
             }
-        } catch (ResponseStatusException rse) {
+        } catch (HttpClientErrorException hcex) {
             consoleService.invalidSelection("Invalid UserID or Amount");
         }
         return sentTransfer;
@@ -176,7 +177,7 @@ public class TenmoService {
 
         try {
             requestedTransfer = restTemplate.exchange(url, HttpMethod.POST, moneyRequest, Transfer.class ).getBody();
-        } catch (RestClientException e) {
+        } catch (HttpClientErrorException hcex) {
             System.out.println("You can't request from yourself and requests must be more than $0.00");
         } if (requestedTransfer != null){
             consoleService.printTransferDetails(requestedTransfer);

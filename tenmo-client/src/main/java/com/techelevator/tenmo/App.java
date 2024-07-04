@@ -83,11 +83,12 @@ public class App {
                 consoleService.printPendingTransfersBanner();
                 Transfer[] pendingTransfers = tenmoService.getPendingTransfers();
                 continue;
-
             } else if (menuSelection == 4) {
                 tenmoService.sendBucks();
+                continue;
             } else if (menuSelection == 5) {
                tenmoService.requestBucks();
+               continue;
             } else if (menuSelection == 0) {
                 continue;
             } else {

@@ -39,23 +39,20 @@ public class TenmoController {
     Transfer transfer = null;
     int userToID = Integer.parseInt(request.get("userToId"));
     BigDecimal amountToSend = new BigDecimal(request.get("amount")) ;
-    Account accountFrom = accountDAO.getAccountByUserID(
-            userDao.getUserByUsername(user.getName()).getId());
-    Account accountTo = accountDAO.getAccountByUserID(userToID);
         try {
-            if (amountToSend.compareTo(BigDecimal.ZERO) == 1 &&
-                    accountFrom.getBalance().compareTo(amountToSend) == 1
-                    && accountFrom.getUserID() != accountTo.getUserID()
-            ) {
-                transfer = new Transfer();
+            Account accountFrom = accountDAO.getAccountByUserID(
+                    userDao.getUserByUsername(user.getName()).getId());
+            Account accountTo = accountDAO.getAccountByUserID(userToID);
+            transfer = new Transfer();
                 transfer.setAccountFromID(accountFrom.getAccountID());
                 transfer.setAccountToID(accountTo.getAccountID());
                 transfer.setAmount(amountToSend);
                 transfer.setTransferStatusID(2);
                 transfer.setTransferTypeID(2);
-            }
-            accountDAO.updateBalance(accountFrom, amountToSend.negate());
-            accountDAO.updateBalance(accountTo, amountToSend);
+            if (isValidTransfer(transfer)) {
+                accountDAO.updateBalance(accountFrom, amountToSend.negate());
+                accountDAO.updateBalance(accountTo, amountToSend);
+            } else { throw new ResponseStatusException(HttpStatus.BAD_REQUEST);}
         } catch (NullPointerException np) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No results found.");
         }
@@ -109,7 +106,8 @@ public class TenmoController {
         List<Transfer> pendingTransfers = new ArrayList<>();
         for (Transfer t: userTransfers){
             if (t.getTransferStatusID() == 1 &&
-                    t.getAccountFromID() == accountDAO.getAccountByUserID(thisUser.getId()).getAccountID())
+                    (t.getAccountFromID() == accountDAO.getAccountByUserID(thisUser.getId()).getAccountID()
+                    || t.getAccountToID() == accountDAO.getAccountByUserID(thisUser.getId()).getAccountID()))
             {
                 pendingTransfers.add(t);
             }
@@ -120,17 +118,32 @@ public class TenmoController {
     public Transfer modifyTransfer(@RequestBody Transfer transfer){
         Transfer updatedTransfer;
         updatedTransfer = transferDAO.updateTransfer(transfer);
-        if (transfer.getTransferStatusID() == 2) {
-            Account accountFrom = accountDAO.getAccountByID(transfer.getAccountFromID());
-            Account accountTo = accountDAO.getAccountByID(transfer.getAccountToID());
-            accountDAO.updateBalance(accountFrom, transfer.getAmount().negate());
-            accountDAO.updateBalance(accountTo, transfer.getAmount());
-        }
+        Account accountFrom = accountDAO.getAccountByID(transfer.getAccountFromID());
+        Account accountTo = accountDAO.getAccountByID(transfer.getAccountToID());
+        BigDecimal amountToSend = transfer.getAmount();
+
+        if (transfer.getTransferStatusID() == 2 && isValidTransfer(transfer)){
+            accountDAO.updateBalance(accountFrom, amountToSend.negate());
+            accountDAO.updateBalance(accountTo, amountToSend);
+        } else { throw new ResponseStatusException(HttpStatus.BAD_REQUEST);}
         return updatedTransfer;
     }
     @RequestMapping(path = "users", method = RequestMethod.GET)
     public User[] getUsers(){
         return userDao.getUsers().toArray(User[]::new);
+    }
+
+    private Boolean isValidTransfer(Transfer transferToCheck){
+        Boolean valid = false;
+        Account accountFrom = accountDAO.getAccountByID(transferToCheck.getAccountFromID());
+        Account accountTo = accountDAO.getAccountByID(transferToCheck.getAccountToID());
+        BigDecimal amountToSend = transferToCheck.getAmount();
+        if (accountFrom.getUserID() != accountTo.getUserID() &&
+                amountToSend.compareTo(BigDecimal.ZERO) == 1 &&
+                accountFrom.getBalance().compareTo(amountToSend) == 1){
+            valid = true;
+        }
+        return valid;
     }
 
 
