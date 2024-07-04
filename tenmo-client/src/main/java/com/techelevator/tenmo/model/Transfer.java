@@ -24,8 +24,10 @@ public class Transfer {
         switch (this.transferTypeID){
             case 1:
                 transferType = "Request";
+                break;
             case 2:
                 transferType = "Send";
+                break;
         }
         return transferType;
     }
@@ -34,10 +36,13 @@ public class Transfer {
         switch (this.transferStatusID){
             case 1:
                 transferStatus = "Pending";
+                break;
             case 2:
                 transferStatus = "Approved";
+                break;
             case 3:
                 transferStatus = "Rejected";
+                break;
         }
         return transferStatus;
     }

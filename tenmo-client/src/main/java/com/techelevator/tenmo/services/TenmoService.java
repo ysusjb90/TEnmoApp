@@ -23,6 +23,7 @@ public class TenmoService {
     public Account getAccount() {
         return account;
     }
+    private AuthenticatedUser user;
 
     public TenmoService(AuthenticatedUser authenticatedUser) {
         this.user = authenticatedUser;
@@ -61,10 +62,10 @@ public class TenmoService {
         HttpEntity<Void> entity = new HttpEntity<>(header);
         Transfer[] allTransfers =
                 restTemplate.exchange(url, HttpMethod.GET, entity, Transfer[].class).getBody();
-        consoleService.printTransferOverviewBanner();
         if (allTransfers.length == 0){
             System.out.println("--------------------\nNo Transfers\n--------------------");
         } else {
+            consoleService.printTransferOverviewBanner();
             for (Transfer t : allTransfers) {
                 consoleService.printTransferOverview(t, user.getUser());
             }
@@ -115,23 +116,27 @@ public class TenmoService {
                     System.out.println("1: Approve\n2: Reject\n0: Don't approve or reject\n------");
                     selection = consoleService.promptForMenuSelection("Please choose an option: ");
                     Transfer modifiedTransfer = null;
-                    switch (selection) {
-                        case 0:
-                            consoleService.invalidSelection("Transfer not modified.");
-                        case 1:
-                            transfer.setTransferStatusID(2);
-                            modifiedTransfer = modifyTransfer(transfer);
-                            System.out.print("Accepted Transfer ");
-                            break;
-                        case 2:
-                            transfer.setTransferStatusID(3);
-                            modifiedTransfer = modifyTransfer(transfer);
-                            System.out.print("Rejected Transfer ");
-                            break;
-                        default:
-                            consoleService.invalidSelection("Invalid Selection.");
+
+                    try {
+                        switch (selection) {
+                            case 0:
+                                consoleService.invalidSelection("Transfer not modified.");
+                            case 1:
+                                transfer.setTransferStatusID(2);
+                                modifiedTransfer = modifyTransfer(transfer);
+                                System.out.print("Accepted Transfer ");
+                                break;
+                            case 2:
+                                transfer.setTransferStatusID(3);
+                                modifiedTransfer = modifyTransfer(transfer);
+                                System.out.print("Rejected Transfer ");
+                                break;
+                            default:
+                                consoleService.invalidSelection("Invalid Selection.");
+                        }
+                        consoleService.printTransferDetails(modifiedTransfer);
+                    } catch (NullPointerException np) {
                     }
-                    consoleService.printTransferDetails(modifiedTransfer);
 
                 } else {
                     consoleService.invalidSelection("Invalid Selection.");
@@ -197,8 +202,13 @@ public class TenmoService {
         HttpHeaders header = createAuthHeader();
         String url = API_BASE_URL + "account/transfers/pending";
         HttpEntity<Transfer> entity = new HttpEntity<>(modifiedTransfer, header);
-        Transfer updatedTransfer = restTemplate.exchange(url, HttpMethod.PUT, entity, Transfer.class).getBody();
+        Transfer updatedTransfer = null;
+        try {
+            updatedTransfer = restTemplate.exchange(url, HttpMethod.PUT, entity, Transfer.class).getBody();
+        } catch (HttpClientErrorException hcex) {
+            consoleService.invalidSelection("Transfer could not be approved.");
+        }
         return updatedTransfer;
     }
-    private AuthenticatedUser user;
+
 }

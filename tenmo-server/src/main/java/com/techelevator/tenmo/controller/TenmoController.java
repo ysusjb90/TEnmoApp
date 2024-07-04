@@ -117,7 +117,6 @@ public class TenmoController {
     @RequestMapping(path= "account/transfers/pending", method = RequestMethod.PUT)
     public Transfer modifyTransfer(@RequestBody Transfer transfer){
         Transfer updatedTransfer;
-        updatedTransfer = transferDAO.updateTransfer(transfer);
         Account accountFrom = accountDAO.getAccountByID(transfer.getAccountFromID());
         Account accountTo = accountDAO.getAccountByID(transfer.getAccountToID());
         BigDecimal amountToSend = transfer.getAmount();
@@ -125,7 +124,11 @@ public class TenmoController {
         if (transfer.getTransferStatusID() == 2 && isValidTransfer(transfer)){
             accountDAO.updateBalance(accountFrom, amountToSend.negate());
             accountDAO.updateBalance(accountTo, amountToSend);
-        } else { throw new ResponseStatusException(HttpStatus.BAD_REQUEST);}
+        } else {
+            transfer.setTransferStatusID(3);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        }
+        updatedTransfer = transferDAO.updateTransfer(transfer);
         return updatedTransfer;
     }
     @RequestMapping(path = "users", method = RequestMethod.GET)
