@@ -17,6 +17,32 @@ public class Transfer {
     private int accountToID;
     @JsonProperty("amount")
     private BigDecimal amount;
+    private String userTo = "";
+    private String userFrom = "";
+    public String transferType(){
+        String transferType = "";
+        switch (this.transferTypeID){
+            case 1:
+                transferType = "Request";
+            case 2:
+                transferType = "Send";
+        }
+        return transferType;
+    }
+    public String transferStatus(){
+        String transferStatus = "";
+        switch (this.transferStatusID){
+            case 1:
+                transferStatus = "Pending";
+            case 2:
+                transferStatus = "Approved";
+            case 3:
+                transferStatus = "Rejected";
+        }
+        return transferStatus;
+    }
+
+
 
 
 
@@ -68,6 +94,21 @@ public class Transfer {
         this.amount = amount;
     }
 
+    public String getUserTo() {
+        return userTo;
+    }
+
+    public void setUserTo(String userTo) {
+        this.userTo = userTo;
+    }
+
+    public String getUserFrom() {
+        return userFrom;
+    }
+
+    public void setUserFrom(String userFrom) {
+        this.userFrom = userFrom;
+    }
 
     public Transfer(){
     }

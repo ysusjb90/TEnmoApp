@@ -109,7 +109,7 @@ public class TenmoController {
         List<Transfer> pendingTransfers = new ArrayList<>();
         for (Transfer t: userTransfers){
             if (t.getTransferStatusID() == 1 &&
-                    t.getAccountToID() == accountDAO.getAccountByUserID(thisUser.getId()).getAccountID())
+                    t.getAccountFromID() == accountDAO.getAccountByUserID(thisUser.getId()).getAccountID())
             {
                 pendingTransfers.add(t);
             }
@@ -120,10 +120,12 @@ public class TenmoController {
     public Transfer modifyTransfer(@RequestBody Transfer transfer){
         Transfer updatedTransfer;
         updatedTransfer = transferDAO.updateTransfer(transfer);
-        Account accountFrom = accountDAO.getAccountByID(transfer.getAccountFromID());
-        Account accountTo = accountDAO.getAccountByID(transfer.getAccountToID());
-        accountDAO.updateBalance(accountFrom, transfer.getAmount().negate());
-        accountDAO.updateBalance(accountTo, transfer.getAmount());
+        if (transfer.getTransferStatusID() == 2) {
+            Account accountFrom = accountDAO.getAccountByID(transfer.getAccountFromID());
+            Account accountTo = accountDAO.getAccountByID(transfer.getAccountToID());
+            accountDAO.updateBalance(accountFrom, transfer.getAmount().negate());
+            accountDAO.updateBalance(accountTo, transfer.getAmount());
+        }
         return updatedTransfer;
     }
     @RequestMapping(path = "users", method = RequestMethod.GET)

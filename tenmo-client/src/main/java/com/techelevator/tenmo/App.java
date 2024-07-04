@@ -6,6 +6,7 @@ import com.techelevator.tenmo.model.UserCredentials;
 import com.techelevator.tenmo.services.AuthenticationService;
 import com.techelevator.tenmo.services.ConsoleService;
 import com.techelevator.tenmo.services.TenmoService;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
@@ -73,90 +74,30 @@ public class App {
             consoleService.printMainMenu();
             menuSelection = consoleService.promptForMenuSelection("Please choose an option: ");
             if (menuSelection == 1) {
-                tenmoService.viewCurrentBalance();
+                consoleService.printBalance();
+                System.out.println(String.format("$%.2f",tenmoService.viewCurrentBalance()));
             } else if (menuSelection == 2) {
                 Transfer[] allTransfers = tenmoService.getAllTransfers();
-                String direction = "";
-                for (Transfer t: allTransfers){
-                    if (t.getAccountToID() == tenmoService.getAccount().getAccountID()){
-                        direction = "From: ";
-                    } else {
-                        direction = "To: ";
-                    }
-                    consoleService.printTransferShort(t.getTransferID(),direction, "Test User", t.getAmount());
-                }
-
-                try {
-                    int selection = consoleService.promptForInt(
-                            "Please enter transfer ID to view details (0 to cancel): ");
-                    if (selection == 0){
-                        consoleService.invalidSelection("Cancelling.");
-                    }else {
-                        consoleService.printTransferDetails(tenmoService.getTransferByID(selection));
-                    }
-                } catch (NullPointerException np) {
-                    consoleService.invalidSelection("Invalid Selection.");
-                }
-
+                continue;
             } else if (menuSelection == 3) {
-                System.out.println("-------------------------------------------\n" +
-                        "Pending Transfers\n" +
-                        "-------------------------------------------");
+                consoleService.printPendingTransfersBanner();
                 Transfer[] pendingTransfers = tenmoService.getPendingTransfers();
-                for (Transfer t : pendingTransfers){
-                    System.out.println(t);
-                };
-
-                int selection = 0;
-                Transfer transfer = null;
-
-                    selection = consoleService.promptForInt("Please enter transfer ID to approve/reject (0 to cancel)");
-                    transfer = tenmoService.getTransferByID(selection);
-                    if (transfer!=null) {
-
-                        System.out.println("1: Approve\n2: Reject\n0: Don't approve or reject\n------");
-                        selection = consoleService.promptForMenuSelection("Please choose an option: ");
-                        switch (selection) {
-                            case 0:
-                                consoleService.invalidSelection("Transfer not modified.");
-                                break;
-                            case 1:
-                                transfer.setTransferStatusID(2);
-                                break;
-                            case 2:
-                                transfer.setTransferStatusID(3);
-                            default:
-                                consoleService.invalidSelection("Invalid Selection.");
-                                break;
-                        }
-                    }else {
-                        consoleService.invalidSelection("Invalid Selection.");
-                    }
+                continue;
 
             } else if (menuSelection == 4) {
-                int userToID= consoleService.promptForInt(
-                        "Enter ID of user you are sending to (0 to cancel): ");
-                try {
-                    BigDecimal amountToSend=consoleService.promptForBigDecimal("Enter amount: ");
-                    tenmoService.sendBucks(userToID,amountToSend);
-                } catch (ResponseStatusException rse) {
-                    consoleService.invalidSelection("Invalid UserID");
-                }
-
+                tenmoService.sendBucks();
             } else if (menuSelection == 5) {
-                consoleService.printAllUsers(tenmoService.getAllUsers());
-                int userFromId = consoleService.promptForInt("Enter ID of user you are requesting from: ");
-                BigDecimal amount = consoleService.promptForBigDecimal("Enter amount: ");
-                tenmoService.requestBucks(userFromId, amount);
-                
+               tenmoService.requestBucks();
             } else if (menuSelection == 0) {
                 continue;
             } else {
                 System.out.println("Invalid Selection");
+                continue;
             }
             consoleService.pause();
         }
     }
+
 
 
 

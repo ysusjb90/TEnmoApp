@@ -9,7 +9,9 @@ import org.springframework.jdbc.support.rowset.SqlRowSet;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Component
 public class JdbcTransferDao implements TransferDAO {
@@ -34,7 +36,7 @@ public class JdbcTransferDao implements TransferDAO {
                 " WHERE transfer_id = ?";
         try {
             int numRowsUpdated = jdbcTemplate.update(sql,transfer.getTransferTypeID(), transfer.getTransferStatusID(),
-                    transfer.getAccountFromID(), transfer.getAccountToID(), transfer.getAmount());
+                    transfer.getAccountFromID(), transfer.getAccountToID(), transfer.getAmount(), transfer.getTransferID());
             if (numRowsUpdated == 0){
                 throw new DaoException("No Rows Were Updated, Invalid Transfer");
             }
@@ -42,7 +44,7 @@ public class JdbcTransferDao implements TransferDAO {
         } catch (CannotGetJdbcConnectionException e) {
             throw new DaoException("Its a phantom.", e);
         } catch (DataIntegrityViolationException e) {
-            throw new DaoException("Bad Syntax or somethin.", e);
+            throw new DaoException("Bad Syntax or somethin." + e.getMessage());
         }
         return updatedTransfer;
     }
@@ -60,7 +62,7 @@ public class JdbcTransferDao implements TransferDAO {
         } catch (CannotGetJdbcConnectionException e) {
             throw new DaoException("Its a phantom.", e);
         } catch (DataIntegrityViolationException e) {
-            throw new DaoException("Bad Syntax or somethin.", e);
+            throw new DaoException("Bad Syntax or somethin." + e.getMessage());
         }
         return transfer;
     }
@@ -84,7 +86,7 @@ public class JdbcTransferDao implements TransferDAO {
         } catch (CannotGetJdbcConnectionException e) {
             throw new DaoException("Its a phantom.", e);
         } catch (DataIntegrityViolationException e) {
-            throw new DaoException("Bad Syntax or somethin.", e);
+            throw new DaoException("Bad Syntax or somethin." + e.getMessage());
         }
         return allTransfers;
     }
@@ -121,12 +123,13 @@ public class JdbcTransferDao implements TransferDAO {
                     newTransfer.getAccountToID(),newTransfer.getAmount());
             createdTransfer = getTransferByID(newTransferID);
 
+
         }catch (CannotGetJdbcConnectionException e) {
             throw new DaoException("Its a phantom.", e);
         } catch (DataIntegrityViolationException e) {
-            throw new DaoException("Bad Syntax or somethin.", e);
+            throw new DaoException("Bad Syntax or somethin." + e.getMessage());
         }
-        return createdTransfer;
+        return mapUsernamesToTransfer(createdTransfer);
 
     }
 
@@ -138,7 +141,18 @@ public class JdbcTransferDao implements TransferDAO {
         transfer.setAccountFromID(result.getInt("account_from"));
         transfer.setAccountToID(result.getInt("account_to"));
         transfer.setAmount(result.getBigDecimal("amount"));
-        return transfer;
+        return mapUsernamesToTransfer(transfer);
     }
-
+    public Transfer mapUsernamesToTransfer(Transfer transferToMap){
+        String sql = "SELECT tu.username , a.account_id FROM tenmo_user tu \n" +
+                "JOIN account a ON tu.user_id = a.user_id ORDER BY tu.user_id";
+        Map<Integer, String> usernameMap = new HashMap<>();
+        SqlRowSet results = jdbcTemplate.queryForRowSet(sql);
+        while (results.next()){
+            usernameMap.put(results.getInt("account_id"), results.getString("username"));
+        }
+        transferToMap.setUserFrom(usernameMap.get(transferToMap.getAccountFromID()));
+        transferToMap.setUserTo(usernameMap.get(transferToMap.getAccountToID()));
+        return transferToMap;
+    }
 }

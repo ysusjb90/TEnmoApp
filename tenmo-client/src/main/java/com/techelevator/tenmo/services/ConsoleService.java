@@ -6,6 +6,7 @@ import com.techelevator.tenmo.model.User;
 import com.techelevator.tenmo.model.UserCredentials;
 
 import java.math.BigDecimal;
+import java.security.Principal;
 import java.util.Scanner;
 
 public class ConsoleService {
@@ -46,6 +47,16 @@ public class ConsoleService {
         System.out.println("5: Request TE bucks");
         System.out.println("0: Exit");
         System.out.println();
+    }
+
+    public void printBalance(){
+        System.out.println();
+        System.out.print("Your current account balance is: ");
+    }
+    public void printPendingTransfersBanner() {
+        System.out.println("-------------------------------------------");
+        System.out.println("Pending Transfers");
+        System.out.println( "-------------------------------------------");
     }
 
     public UserCredentials promptForCredentials() {
@@ -90,10 +101,10 @@ public class ConsoleService {
         System.out.println("An error occurred. Check the log for details.");
     }
     public void printTransferDetails (Transfer transfer) {
-        String transferFormat = "Id: %d\nFrom: %s\nTo: %s\nType: %s\nStatus: %s\nAmount: $%f";
+        String transferFormat = "Id: %d\nFrom: %s\nTo: %s\nType: %s\nStatus: %s\nAmount: $%.2f";
         String transferDetails = String.format(transferFormat,
-                transfer.getTransferID(), transfer.getAccountFromID(), transfer.getAccountToID(),
-                transfer.getTransferTypeID(),transfer.getTransferStatusID(), transfer.getAmount());
+                transfer.getTransferID(), transfer.getUserFrom(), transfer.getUserTo(),
+                transfer.transferType(),transfer.transferStatus(), transfer.getAmount());
         System.out.println("---------------------------");
         System.out.println("Transfer Details");
         System.out.println("---------------------------");
@@ -107,9 +118,21 @@ public class ConsoleService {
         }
     }
 
-    public void printTransferShort(int transferID, String direction, String otherUser, BigDecimal amount) {
-        String string = "%d\t %s\t%s\t$%f";
-        System.out.println(String.format(string, transferID, direction,otherUser, amount));
+    public void printTransferShort(Transfer transferToPrint, User thisUser){
+        String string = "%d\t %s\t%s\t$%.2f";
+        String direction = "";
+        String otherUser = "";
+        if (transferToPrint.getUserFrom() == thisUser.getUsername()){
+            direction = "To: ";
+            otherUser = transferToPrint.getUserTo();
+        } else {
+            direction = "From: ";
+            otherUser = transferToPrint.getUserFrom();
+        }
+        System.out.println(String.format(
+                string, transferToPrint.getTransferID(), direction,otherUser, transferToPrint.getAmount()));
+
+
     }
     public void invalidSelection (String message){
         System.out.println(message + " Returning to Main Menu.");
