@@ -3,14 +3,12 @@ package com.techelevator.tenmo.controller;
 import com.techelevator.tenmo.dao.AccountDAO;
 import com.techelevator.tenmo.dao.TransferDAO;
 import com.techelevator.tenmo.dao.UserDao;
-import com.techelevator.tenmo.exception.DaoException;
 import com.techelevator.tenmo.model.Account;
 import com.techelevator.tenmo.model.Transfer;
 import com.techelevator.tenmo.model.User;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
@@ -34,21 +32,79 @@ public class TenmoController {
         this.accountDAO = accountDao;
         this.userDao = userDao;
     }
+    @RequestMapping(path = "account", method = RequestMethod.GET)
+    public Account getAccount(Principal user){
+        int userID = userDao.getUserByUsername(user.getName()).getId();
+        Account account = accountDAO.getAccountByUserID(userID);
+        return account;
+    }
+    @RequestMapping(path = "account/history", method = RequestMethod.GET)
+    public Transfer[] transferHistory(Principal user){
+        int userId = userDao.getUserByUsername(user.getName()).getId();
+        List<Transfer> accountHistory = transferDAO.getTransfersByUserID(userId);
+        return accountHistory.toArray(Transfer[]::new);
+        
+    }
+    @RequestMapping(path = "account/transfers", method = RequestMethod.GET)
+    public Transfer getTransferByID(@RequestParam (name = "id") int transferId){
+        Transfer transfer = null;
+        transfer = transferDAO.getTransferByID(transferId);
+        return transfer;
+    }
+    @RequestMapping(path= "account/transfers/pending", method =RequestMethod.GET)
+    public Transfer[] getPendingTransfers(Principal principal){
+        User thisUser = userDao.getUserByUsername(principal.getName());
+        List<Transfer> userTransfers = transferDAO.getTransfersByUserID(thisUser.getId());
+        List<Transfer> pendingTransfers = new ArrayList<>();
+        for (Transfer t: userTransfers){
+            if (t.getTransferStatusID() == 1 &&
+                    (t.getAccountFromID() == accountDAO.getAccountByUserID(thisUser.getId()).getAccountID()
+                    //|| t.getAccountToID() == accountDAO.getAccountByUserID(thisUser.getId()).getAccountID()
+                    ))
+            {
+                pendingTransfers.add(t);
+            }
+        }
+        return pendingTransfers.toArray(Transfer[]::new);
+    }
+    @RequestMapping(path= "account/transfers/pending", method = RequestMethod.PUT)
+    public Transfer modifyTransfer(@RequestBody Transfer transfer){
+        Transfer updatedTransfer = null;
+        Account accountFrom = accountDAO.getAccountByID(transfer.getAccountFromID());
+        Account accountTo = accountDAO.getAccountByID(transfer.getAccountToID());
+        BigDecimal amountToSend = transfer.getAmount();
+
+        if (transfer.getTransferStatusID() == 2){
+                if (isValidTransfer(transfer)) {
+                    accountDAO.updateBalance(accountFrom, amountToSend.negate());
+                    accountDAO.updateBalance(accountTo, amountToSend);
+
+                } else {
+                    transfer.setTransferStatusID(3);
+                    updatedTransfer = transferDAO.updateTransfer(transfer);
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+                }
+        }
+
+        updatedTransfer = transferDAO.updateTransfer(transfer);
+
+        return updatedTransfer;
+    }
     @RequestMapping(path = "send", method = RequestMethod.POST)
-    public Transfer sendMoney(@RequestBody Map<String, String> request, Principal user) {
-    Transfer transfer = null;
-    int userToID = Integer.parseInt(request.get("userToId"));
-    BigDecimal amountToSend = new BigDecimal(request.get("amount")) ;
+    public Transfer sendBucks(@RequestBody Map<String, String> request, Principal user) {
+        Transfer transfer = null;
+        int userToID = Integer.parseInt(request.get("userToId"));
+        BigDecimal amountToSend = new BigDecimal(request.get("amount")) ;
         try {
             Account accountFrom = accountDAO.getAccountByUserID(
                     userDao.getUserByUsername(user.getName()).getId());
             Account accountTo = accountDAO.getAccountByUserID(userToID);
             transfer = new Transfer();
-                transfer.setAccountFromID(accountFrom.getAccountID());
-                transfer.setAccountToID(accountTo.getAccountID());
-                transfer.setAmount(amountToSend);
-                transfer.setTransferStatusID(2);
-                transfer.setTransferTypeID(2);
+            transfer.setAccountFromID(accountFrom.getAccountID());
+            transfer.setAccountToID(accountTo.getAccountID());
+            transfer.setAmount(amountToSend);
+            transfer.setTransferStatusID(2);
+            transfer.setTransferTypeID(2);
             if (isValidTransfer(transfer)) {
                 accountDAO.updateBalance(accountFrom, amountToSend.negate());
                 accountDAO.updateBalance(accountTo, amountToSend);
@@ -56,10 +112,10 @@ public class TenmoController {
         } catch (NullPointerException np) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No results found.");
         }
-    return transferDAO.createTransfer(transfer);
-}
+        return transferDAO.createTransfer(transfer);
+    }
     @RequestMapping(path = "request", method = RequestMethod.POST)
-    public Transfer requestMoney(@RequestBody Map<String, String> request, Principal user) {
+    public Transfer requestBucks(@RequestBody Map<String, String> request, Principal user) {
         Transfer returnedTransfer = null;
         Transfer createdTransfer = null;
         Account usersAccount = accountDAO.getAccountByUserID(userDao.getUserByUsername(user.getName()).getId());
@@ -79,57 +135,6 @@ public class TenmoController {
         }
         returnedTransfer =  transferDAO.createTransfer(createdTransfer);
         return returnedTransfer;
-    }
-    @RequestMapping(path = "account", method = RequestMethod.GET)
-    public Account getAccount(Principal user){
-        int userID = userDao.getUserByUsername(user.getName()).getId();
-        Account account = accountDAO.getAccountByUserID(userID);
-        return account;
-    }
-    @RequestMapping(path = "account/history", method = RequestMethod.GET)
-    public Transfer[] accountHistory(Principal user){
-        int userId = userDao.getUserByUsername(user.getName()).getId();
-        List<Transfer> accountHistory = transferDAO.getTransfersByUserID(userId);
-        return accountHistory.toArray(Transfer[]::new);
-        
-    }
-    @RequestMapping(path = "account/transfers", method = RequestMethod.GET)
-    public Transfer getTransfer(@RequestParam (name = "id") int transferId){
-        Transfer transfer = null;
-        transfer = transferDAO.getTransferByID(transferId);
-        return transfer;
-    }
-    @RequestMapping(path= "account/transfers/pending", method =RequestMethod.GET)
-    public Transfer[] pendingTransfers(Principal principal){
-        User thisUser = userDao.getUserByUsername(principal.getName());
-        List<Transfer> userTransfers = transferDAO.getTransfersByUserID(thisUser.getId());
-        List<Transfer> pendingTransfers = new ArrayList<>();
-        for (Transfer t: userTransfers){
-            if (t.getTransferStatusID() == 1 &&
-                    (t.getAccountFromID() == accountDAO.getAccountByUserID(thisUser.getId()).getAccountID()
-                    || t.getAccountToID() == accountDAO.getAccountByUserID(thisUser.getId()).getAccountID()))
-            {
-                pendingTransfers.add(t);
-            }
-        }
-        return pendingTransfers.toArray(Transfer[]::new);
-    }
-    @RequestMapping(path= "account/transfers/pending", method = RequestMethod.PUT)
-    public Transfer modifyTransfer(@RequestBody Transfer transfer){
-        Transfer updatedTransfer;
-        Account accountFrom = accountDAO.getAccountByID(transfer.getAccountFromID());
-        Account accountTo = accountDAO.getAccountByID(transfer.getAccountToID());
-        BigDecimal amountToSend = transfer.getAmount();
-
-        if (transfer.getTransferStatusID() == 2 && isValidTransfer(transfer)){
-            accountDAO.updateBalance(accountFrom, amountToSend.negate());
-            accountDAO.updateBalance(accountTo, amountToSend);
-        } else {
-            transfer.setTransferStatusID(3);
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
-        }
-        updatedTransfer = transferDAO.updateTransfer(transfer);
-        return updatedTransfer;
     }
     @RequestMapping(path = "users", method = RequestMethod.GET)
     public User[] getUsers(){

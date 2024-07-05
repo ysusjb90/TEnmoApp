@@ -6,10 +6,6 @@ import com.techelevator.tenmo.model.UserCredentials;
 import com.techelevator.tenmo.services.AuthenticationService;
 import com.techelevator.tenmo.services.ConsoleService;
 import com.techelevator.tenmo.services.TenmoService;
-import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.server.ResponseStatusException;
-
-import java.math.BigDecimal;
 
 public class App {
 
@@ -71,13 +67,13 @@ public class App {
         tenmoService = new TenmoService(currentUser);
         int menuSelection = -1;
         while (menuSelection != 0) {
-            consoleService.printMainMenu();
+            consoleService.printMainMenu(currentUser.getUser().getUsername(), tenmoService.viewCurrentBalance());
             menuSelection = consoleService.promptForMenuSelection("Please choose an option: ");
             if (menuSelection == 1) {
                 consoleService.printBalance();
                 System.out.println(String.format("$%.2f",tenmoService.viewCurrentBalance()));
             } else if (menuSelection == 2) {
-                Transfer[] allTransfers = tenmoService.getAllTransfers();
+                Transfer[] allTransfers = tenmoService.transferHistory();
                 continue;
             } else if (menuSelection == 3) {
                 consoleService.printPendingTransfersBanner();

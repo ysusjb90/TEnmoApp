@@ -129,12 +129,11 @@ public class Transfer {
 
     @Override
     public String toString(){
-        String string = "%d\t %s\t%s\t$%f";
-        String recipient = "test recipient";
-        String toOrFrom = "test direction";
-        return String.format(string,
-                this.transferID, toOrFrom , recipient, this.amount);
-
+        String transferFormat = "Id: %d\nFrom: %s\nTo: %s\nType: %s\nStatus: %s\nAmount: $%.2f";
+        String transferDetails = String.format(transferFormat,
+                this.getTransferID(), this.getUserFrom(), this.getUserTo(),
+                this.transferType(),this.transferStatus(), this.getAmount());
+        return "---------------------------\nTransfer Details\n---------------------------\n" + transferDetails;
     }
 
 }

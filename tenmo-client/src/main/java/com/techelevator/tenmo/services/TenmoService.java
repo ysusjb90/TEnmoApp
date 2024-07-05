@@ -34,7 +34,6 @@ public class TenmoService {
         this.account = responseEntity.getBody();
         this.allUsers = getAllUsers();
     }
-
     public HttpHeaders createAuthHeader(){
         HttpHeaders header = new HttpHeaders();
         String token = user.getToken();
@@ -42,7 +41,6 @@ public class TenmoService {
         header.setContentType(MediaType.APPLICATION_JSON);
         return header;
     }
-
     public BigDecimal viewCurrentBalance() {
         String url = API_BASE_URL + "account";
         HttpHeaders header = createAuthHeader();
@@ -54,12 +52,16 @@ public class TenmoService {
         return currentBalance;
 
     }
-    public Transfer[] getAllTransfers() {
+    public Transfer[] transferHistory() {
         HttpHeaders header = createAuthHeader();
         String url = API_BASE_URL + "account/history";
         HttpEntity<Void> entity = new HttpEntity<>(header);
         Transfer[] allTransfers =
                 restTemplate.exchange(url, HttpMethod.GET, entity, Transfer[].class).getBody();
+        Map<Integer, Transfer> allTransfersMap = new HashMap<>();
+        for (Transfer t : allTransfers){
+            allTransfersMap.put(t.getTransferID(), t);
+        }
         if (allTransfers.length == 0){
             System.out.println("--------------------\nNo Transfers\n--------------------");
         } else {
@@ -71,13 +73,17 @@ public class TenmoService {
                 int selection = consoleService.promptForInt(
                         "Please enter transfer ID to view details (0 to cancel): ");
                 if (selection == 0) {
-                    consoleService.invalidSelection("Cancelling.");
+                    consoleService.returnToMainMenu("Cancelling.");
                 } else {
-                    consoleService.printTransferDetails(getTransferByID(selection));
-                    consoleService.pause();
+                    if (allTransfersMap.containsKey(selection)) {
+                        consoleService.printTransferDetails(getTransferByID(selection));
+                    }
+                    else {
+                        consoleService.returnToMainMenu("Invalid Transfer ID selected");
+                    }
                 }
             } catch (NullPointerException np) {
-                consoleService.invalidSelection("Invalid Selection.");
+                consoleService.returnToMainMenu("Invalid Selection.");
             }
         }
         return allTransfers;
@@ -95,34 +101,39 @@ public class TenmoService {
         String url = API_BASE_URL + "account/transfers/pending";
         HttpEntity entity = new HttpEntity(header);
         Transfer[] pendingTransfers = restTemplate.exchange(url, HttpMethod.GET, entity, Transfer[].class).getBody();
-        for (Transfer t : pendingTransfers){
+        Map<Integer, Transfer> transferMap = new HashMap<>();
+        for (Transfer t :pendingTransfers){
+            transferMap.put(t.getTransferID(), t);
             consoleService.printTransferOverview(t, user.getUser());
-        };
-        System.out.println();
+        }
         if (pendingTransfers.length == 0){
-            System.out.println("No Pending Transfers");
+            consoleService.returnToMainMenu("No Pending Transfers. ");
         } else {
             int selection = 0;
             Transfer transfer = null;
 
             selection = consoleService.promptForInt("Please enter transfer ID to approve/reject (0 to cancel)");
             if (selection == 0) {
-                consoleService.invalidSelection("Cancelling");
+                consoleService.returnToMainMenu("Cancelling");
             } else {
-                transfer = getTransferByID(selection);
+                if (transferMap.containsKey(selection)) {
+                    transfer = transferMap.get(selection);
+                }
                 if (transfer != null) {
-                    System.out.println("1: Approve\n2: Reject\n0: Don't approve or reject\n------");
+                    System.out.println("1: Approve\n2: Reject\n0: Don't approve or reject(Cancel)\n------");
                     selection = consoleService.promptForMenuSelection("Please choose an option: ");
                     Transfer modifiedTransfer = null;
-
                     try {
                         switch (selection) {
                             case 0:
-                                consoleService.invalidSelection("Transfer not modified.");
+                                consoleService.returnToMainMenu("Transfer not modified.");
+                                break;
                             case 1:
                                 transfer.setTransferStatusID(2);
                                 modifiedTransfer = modifyTransfer(transfer);
-                                System.out.print("Accepted Transfer ");
+                                if (modifiedTransfer != null) {
+                                    System.out.print("Accepted Transfer ");
+                                }
                                 break;
                             case 2:
                                 transfer.setTransferStatusID(3);
@@ -130,61 +141,85 @@ public class TenmoService {
                                 System.out.print("Rejected Transfer ");
                                 break;
                             default:
-                                consoleService.invalidSelection("Invalid Selection.");
+                                consoleService.returnToMainMenu("Invalid Selection.");
                         }
                         consoleService.printTransferDetails(modifiedTransfer);
                     } catch (NullPointerException np) {
                     }
 
                 } else {
-                    consoleService.invalidSelection("Invalid Selection.");
+                    consoleService.returnToMainMenu("Invalid Selection.");
                 }
             }
         }
        return pendingTransfers;
     }
+    public Transfer modifyTransfer(Transfer modifiedTransfer){
+
+        HttpHeaders header = createAuthHeader();
+        String url = API_BASE_URL + "account/transfers/pending";
+        HttpEntity<Transfer> entity = new HttpEntity<>(modifiedTransfer, header);
+        Transfer updatedTransfer = null;
+        try {
+            updatedTransfer = restTemplate.exchange(url, HttpMethod.PUT, entity, Transfer.class).getBody();
+        } catch (HttpClientErrorException hcex) {
+            consoleService.returnToMainMenu("Transfer could not be approved.");
+        }
+        return updatedTransfer;
+    }
     public Transfer sendBucks() {
         consoleService.printAllUsers(allUsers, this.user.getUser());
+        Transfer sentTransfer = null;
         int userToId= consoleService.promptForInt(
                 "Enter ID of user you are sending to (0 to cancel): ");
-        BigDecimal amount=consoleService.promptForBigDecimal("Enter amount: ");
-        Transfer sentTransfer = null;
-        HttpHeaders header = createAuthHeader();
-        HttpEntity<Void> entity = new HttpEntity<>(header);
-        String url = API_BASE_URL + "send";
-        Map<String, String> bodyMap = new HashMap<>();
-        bodyMap.put("userToId", String.valueOf(userToId));
-        bodyMap.put("amount", amount.toPlainString());
-        HttpEntity<Map<String, String>> moneySend = new HttpEntity<>(bodyMap, header);
-        try {
-            sentTransfer = restTemplate.exchange(url, HttpMethod.POST, moneySend, Transfer.class).getBody();
-            if (sentTransfer != null){
-                consoleService.printTransferDetails(sentTransfer);
+        if (userToId == 0){
+            consoleService.returnToMainMenu("Cancelling.");
+        }else {
+            if (allUsers.containsKey(userToId)) {
+                BigDecimal amount = consoleService.promptForBigDecimal("Enter amount: ");
+                HttpHeaders header = createAuthHeader();
+                HttpEntity<Void> entity = new HttpEntity<>(header);
+                String url = API_BASE_URL + "send";
+                Map<String, String> bodyMap = new HashMap<>();
+                bodyMap.put("userToId", String.valueOf(userToId));
+                bodyMap.put("amount", amount.toPlainString());
+                HttpEntity<Map<String, String>> moneySend = new HttpEntity<>(bodyMap, header);
+                try {
+                    sentTransfer = restTemplate.exchange(url, HttpMethod.POST, moneySend, Transfer.class).getBody();
+                    if (sentTransfer != null) {
+                        consoleService.printTransferDetails(sentTransfer);
+                    }
+                } catch (HttpClientErrorException hcex) {
+                    consoleService.returnToMainMenu("Invalid Amount");
+                }
+            } else {
+                consoleService.returnToMainMenu("Invalid USer ID Selected");
             }
-        } catch (HttpClientErrorException hcex) {
-            consoleService.invalidSelection("Invalid UserID or Amount");
         }
         return sentTransfer;
     }
     public Transfer requestBucks() {
         consoleService.printAllUsers(allUsers, this.user.getUser());
-        int userFromID = consoleService.promptForInt("Enter ID of user you are requesting from: ");
-            BigDecimal amount = consoleService.promptForBigDecimal("Enter amount: ");
-            HttpHeaders header = createAuthHeader();
-            String url = API_BASE_URL + "request";
-            Map<String, String> bodyMap = new HashMap<>();
-            bodyMap.put("userFromId", String.valueOf(userFromID));
-            bodyMap.put("amount", amount.toPlainString());
-
-            HttpEntity<Map<String, String>> moneyRequest = new HttpEntity<>(bodyMap, header);
-
         Transfer requestedTransfer = null;
-
-        if (allUsers.containsKey(userFromID)&& amount.compareTo(BigDecimal.ZERO)==1) {
-            requestedTransfer = restTemplate.exchange(url, HttpMethod.POST, moneyRequest, Transfer.class ).getBody();
-            consoleService.printTransferDetails(requestedTransfer);
-        } else {
-            System.out.println("You can't request from yourself and requests must be more than $0.00");
+        int userFromID = consoleService.promptForInt("Enter ID of user you are requesting from (0 to cancel): ");
+        if (userFromID == 0) {
+            if (allUsers.containsKey(userFromID)) {
+                BigDecimal amount = consoleService.promptForBigDecimal("Enter amount: ");
+                HttpHeaders header = createAuthHeader();
+                String url = API_BASE_URL + "request";
+                Map<String, String> bodyMap = new HashMap<>();
+                bodyMap.put("userFromId", String.valueOf(userFromID));
+                bodyMap.put("amount", amount.toPlainString());
+                HttpEntity<Map<String, String>> moneyRequest = new HttpEntity<>(bodyMap, header);
+                try {
+                    requestedTransfer = restTemplate.exchange(url, HttpMethod.POST, moneyRequest, Transfer.class).getBody();
+                    consoleService.printTransferDetails(requestedTransfer);
+                } catch (HttpClientErrorException hcex) {
+                    System.out.println("You can't request from yourself and requests must be more than $0.00");
+                }
+            } else {
+                consoleService.returnToMainMenu("Invalid User ID Selected");
+            }
         }
 
         return requestedTransfer;
@@ -202,17 +237,5 @@ public class TenmoService {
         return userMap;
     }
 
-    public Transfer modifyTransfer(Transfer modifiedTransfer){
-        HttpHeaders header = createAuthHeader();
-        String url = API_BASE_URL + "account/transfers/pending";
-        HttpEntity<Transfer> entity = new HttpEntity<>(modifiedTransfer, header);
-        Transfer updatedTransfer = null;
-        try {
-            updatedTransfer = restTemplate.exchange(url, HttpMethod.PUT, entity, Transfer.class).getBody();
-        } catch (HttpClientErrorException hcex) {
-            consoleService.invalidSelection("Transfer could not be approved.");
-        }
-        return updatedTransfer;
-    }
 
 }
