@@ -6,7 +6,7 @@ import com.techelevator.tenmo.model.User;
 import com.techelevator.tenmo.model.UserCredentials;
 
 import java.math.BigDecimal;
-import java.util.Locale;
+import java.util.Map;
 import java.util.Scanner;
 
 public class ConsoleService {
@@ -117,10 +117,19 @@ public class ConsoleService {
         System.out.println(transferDetails);
     }
     
-    public void printAllUsers(User[] users){
+    public void printAllUsers(Map<Integer,User> users, User thisUser){
+        //TODO: Show all users except the user
         System.out.println("--------\nUsers\nID\tName\n--------");
-        for (User u : users){
-            System.out.println(u.getId() + "\t" + u.getUsername());
+        //for (User u : users){
+        //    System.out.println(u.getId() + "\t" + u.getUsername());
+        //}
+        for (Map.Entry u: users.entrySet()){
+            int userID = (int)u.getKey();
+            User user = (User)u.getValue();
+            if (!thisUser.getUsername().equals(user.getUsername())) {
+
+                System.out.println(userID + "\t" + user.getUsername());
+            }
         }
     }
 

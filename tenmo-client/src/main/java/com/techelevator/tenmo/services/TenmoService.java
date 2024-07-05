@@ -6,9 +6,7 @@ import com.techelevator.tenmo.model.Transfer;
 import com.techelevator.tenmo.model.User;
 import org.springframework.http.*;
 import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
@@ -19,7 +17,7 @@ public class TenmoService {
     private RestTemplate restTemplate;
     ConsoleService consoleService;
     Account account;
-    User[] allUsers;
+    Map<Integer,User> allUsers;
     public Account getAccount() {
         return account;
     }
@@ -146,7 +144,7 @@ public class TenmoService {
        return pendingTransfers;
     }
     public Transfer sendBucks() {
-        consoleService.printAllUsers(allUsers);
+        consoleService.printAllUsers(allUsers, this.user.getUser());
         int userToId= consoleService.promptForInt(
                 "Enter ID of user you are sending to (0 to cancel): ");
         BigDecimal amount=consoleService.promptForBigDecimal("Enter amount: ");
@@ -169,33 +167,39 @@ public class TenmoService {
         return sentTransfer;
     }
     public Transfer requestBucks() {
-        consoleService.printAllUsers(allUsers);
+        consoleService.printAllUsers(allUsers, this.user.getUser());
         int userFromID = consoleService.promptForInt("Enter ID of user you are requesting from: ");
-        BigDecimal amount = consoleService.promptForBigDecimal("Enter amount: ");
-        HttpHeaders header = createAuthHeader();
-        String url = API_BASE_URL + "request";
-        Map<String, String> bodyMap = new HashMap<>();
-        bodyMap.put("userFromId", String.valueOf(userFromID));
-        bodyMap.put("amount", amount.toPlainString());
-        HttpEntity<Map<String, String>>  moneyRequest = new HttpEntity<>(bodyMap, header);
+            BigDecimal amount = consoleService.promptForBigDecimal("Enter amount: ");
+            HttpHeaders header = createAuthHeader();
+            String url = API_BASE_URL + "request";
+            Map<String, String> bodyMap = new HashMap<>();
+            bodyMap.put("userFromId", String.valueOf(userFromID));
+            bodyMap.put("amount", amount.toPlainString());
+
+            HttpEntity<Map<String, String>> moneyRequest = new HttpEntity<>(bodyMap, header);
+
         Transfer requestedTransfer = null;
 
-        try {
+        if (allUsers.containsKey(userFromID)&& amount.compareTo(BigDecimal.ZERO)==1) {
             requestedTransfer = restTemplate.exchange(url, HttpMethod.POST, moneyRequest, Transfer.class ).getBody();
-        } catch (HttpClientErrorException hcex) {
-            System.out.println("You can't request from yourself and requests must be more than $0.00");
-        } if (requestedTransfer != null){
             consoleService.printTransferDetails(requestedTransfer);
+        } else {
+            System.out.println("You can't request from yourself and requests must be more than $0.00");
         }
+
         return requestedTransfer;
 
     }
-    public User[] getAllUsers() {
+    public Map<Integer, User> getAllUsers() {
         HttpHeaders header = createAuthHeader();
         HttpEntity<Void> entity = new HttpEntity<>(header);
         String url = API_BASE_URL + "users";
         User[] users = restTemplate.exchange(url, HttpMethod.GET, entity, User[].class).getBody();
-        return users;
+        Map<Integer,User> userMap = new HashMap<>();
+        for (User u: users){
+            userMap.put(u.getId(), u);
+        }
+        return userMap;
     }
 
     public Transfer modifyTransfer(Transfer modifiedTransfer){
