@@ -63,27 +63,23 @@ public class TenmoService {
             allTransfersMap.put(t.getTransferID(), t);
         }
         if (allTransfers.length == 0){
-            System.out.println("--------------------\nNo Transfers\n--------------------");
+            consoleService.returnToMainMenu("No Transfers.");
         } else {
             consoleService.printTransferOverviewBanner();
             for (Transfer t : allTransfers) {
                 consoleService.printTransferOverview(t, user.getUser());
             }
-            try {
-                int selection = consoleService.promptForInt(
-                        "Please enter transfer ID to view details (0 to cancel): ");
-                if (selection == 0) {
-                    consoleService.returnToMainMenu("Cancelling.");
-                } else {
-                    if (allTransfersMap.containsKey(selection)) {
-                        consoleService.printTransferDetails(getTransferByID(selection));
-                    }
-                    else {
-                        consoleService.returnToMainMenu("Invalid Transfer ID selected");
-                    }
+            int selection = consoleService.promptForInt(
+                    "Please enter transfer ID to view details (0 to cancel): ");
+            if (selection == 0) {
+                consoleService.returnToMainMenu("Cancelling.");
+            } else {
+                if (allTransfersMap.containsKey(selection)) {
+                    consoleService.printTransferDetails(allTransfersMap.get(selection));
                 }
-            } catch (NullPointerException np) {
-                consoleService.returnToMainMenu("Invalid Selection.");
+                else {
+                    consoleService.returnToMainMenu("Invalid Transfer ID selected");
+                }
             }
         }
         return allTransfers;
@@ -112,7 +108,7 @@ public class TenmoService {
             int selection = 0;
             Transfer transfer = null;
 
-            selection = consoleService.promptForInt("Please enter transfer ID to approve/reject (0 to cancel)");
+            selection = consoleService.promptForInt("Please enter transfer ID to approve/reject (0 to cancel): ");
             if (selection == 0) {
                 consoleService.returnToMainMenu("Cancelling");
             } else {
@@ -120,7 +116,7 @@ public class TenmoService {
                     transfer = transferMap.get(selection);
                 }
                 if (transfer != null) {
-                    System.out.println("1: Approve\n2: Reject\n0: Don't approve or reject(Cancel)\n------");
+                    consoleService.modifyPendingTransferMenu();
                     selection = consoleService.promptForMenuSelection("Please choose an option: ");
                     Transfer modifiedTransfer = null;
                     try {
@@ -132,23 +128,27 @@ public class TenmoService {
                                 transfer.setTransferStatusID(2);
                                 modifiedTransfer = modifyTransfer(transfer);
                                 if (modifiedTransfer != null) {
-                                    System.out.print("Accepted Transfer ");
+                                    consoleService.printTransferDetails(modifiedTransfer);
+                                    consoleService.returnToMainMenu("Accepted Transfer.");
                                 }
                                 break;
                             case 2:
                                 transfer.setTransferStatusID(3);
                                 modifiedTransfer = modifyTransfer(transfer);
-                                System.out.print("Rejected Transfer ");
+                                if (modifiedTransfer != null) {
+                                    consoleService.printTransferDetails(modifiedTransfer);
+                                    consoleService.returnToMainMenu("Rejected Transfer.");
+                                }
                                 break;
                             default:
-                                consoleService.returnToMainMenu("Invalid Selection.");
+                                consoleService.returnToMainMenu("Invalid Input.");
                         }
-                        consoleService.printTransferDetails(modifiedTransfer);
+
                     } catch (NullPointerException np) {
                     }
 
                 } else {
-                    consoleService.returnToMainMenu("Invalid Selection.");
+                    consoleService.returnToMainMenu("Transfer not found.");
                 }
             }
         }
@@ -193,7 +193,7 @@ public class TenmoService {
                     consoleService.returnToMainMenu("Invalid Amount");
                 }
             } else {
-                consoleService.returnToMainMenu("Invalid USer ID Selected");
+                consoleService.returnToMainMenu("Invalid User ID Selected");
             }
         }
         return sentTransfer;
@@ -202,7 +202,7 @@ public class TenmoService {
         consoleService.printAllUsers(allUsers, this.user.getUser());
         Transfer requestedTransfer = null;
         int userFromID = consoleService.promptForInt("Enter ID of user you are requesting from (0 to cancel): ");
-        if (userFromID == 0) {
+        if (userFromID != 0) {
             if (allUsers.containsKey(userFromID)) {
                 BigDecimal amount = consoleService.promptForBigDecimal("Enter amount: ");
                 HttpHeaders header = createAuthHeader();
@@ -215,7 +215,7 @@ public class TenmoService {
                     requestedTransfer = restTemplate.exchange(url, HttpMethod.POST, moneyRequest, Transfer.class).getBody();
                     consoleService.printTransferDetails(requestedTransfer);
                 } catch (HttpClientErrorException hcex) {
-                    System.out.println("You can't request from yourself and requests must be more than $0.00");
+                   consoleService.returnToMainMenu("You can't request from yourself and requests must be more than $0.00.\n");
                 }
             } else {
                 consoleService.returnToMainMenu("Invalid User ID Selected");

@@ -92,7 +92,7 @@ public class ConsoleService {
     }
 
     public void pause() {
-        System.out.println("\nPress Enter to continue...");
+        System.out.println("Press Enter to continue...");
         scanner.nextLine();
     }
     public void printErrorMessage() {
@@ -125,8 +125,7 @@ public class ConsoleService {
     }
     public void printTransferDetails (Transfer transfer) {
         System.out.println(transfer);
-        pause();
-    }
+        }
     public void printAllUsers(Map<Integer,User> users, User thisUser){
         System.out.println("*********************\nUsers\nID\t\tName\n*********************");
         //for (User u : users){
@@ -146,6 +145,9 @@ public class ConsoleService {
         System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
         System.out.println((message + " Returning to Main Menu.").toUpperCase());
         System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+    }
+    public void modifyPendingTransferMenu(){
+        System.out.println("1: Approve\n2: Reject\n0: Don't approve or reject(Cancel)\n------");
     }
 
 }
